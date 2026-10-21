@@ -155,6 +155,7 @@ void EmuThread::run()
         if (emuInstance->instanceID == 0)
             MPInterface::Get().Process();
 
+        emuInstance->barista.SetActive(emuStatus == emuStatus_Running || emuStatus == emuStatus_FrameStep);
         emuInstance->inputProcess();
 
         if (emuInstance->hotkeyPressed(HK_FrameLimitToggle)) emit windowLimitFPSChange();
@@ -252,10 +253,13 @@ void EmuThread::run()
             }
 
             // process input and hotkeys
-            emuInstance->nds->SetKeyMask(emuInstance->inputMask);
+            const auto baristaInput = emuInstance->barista.ReadInput();
+            emuInstance->nds->SetKeyMask(emuInstance->inputMask & baristaInput.mask);
 
             if (emuInstance->isTouching)
                 emuInstance->nds->TouchScreen(emuInstance->touchX, emuInstance->touchY);
+            else if (baristaInput.touching)
+                emuInstance->nds->TouchScreen(baristaInput.x, baristaInput.y);
             else
                 emuInstance->nds->ReleaseScreen();
 
@@ -320,6 +324,7 @@ void EmuThread::run()
             if (emuInstance->firmwareSave)
                 emuInstance->firmwareSave->CheckFlush();
 
+            emuInstance->baristaCaptureFrame();
             emuInstance->drawScreen();
 
 #ifdef MELONCAP
@@ -477,6 +482,7 @@ void EmuThread::handleMessages()
         switch (msg.type)
         {
         case msg_Exit:
+            emuInstance->barista.SetActive(false);
             emuStatus = emuStatus_Exit;
             emuPauseStack = emuPauseStackRunning;
 

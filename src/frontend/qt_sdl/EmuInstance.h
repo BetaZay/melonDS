@@ -28,6 +28,7 @@
 #include "Window.h"
 #include "Config.h"
 #include "SaveManager.h"
+#include "barista/Connector.h"
 
 const int kMaxWindows = 4;
 
@@ -124,6 +125,9 @@ public:
     void releaseGL();
 
     void drawScreen();
+    void baristaConfigure();
+    void baristaCaptureFrame();
+    Barista::Connector barista;
 
     // return: empty string = setup OK, non-empty = error message
     QString verifySetup();

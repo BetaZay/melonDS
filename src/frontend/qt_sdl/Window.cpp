@@ -50,6 +50,7 @@
 #include "VideoSettingsDialog.h"
 #include "CameraSettingsDialog.h"
 #include "AudioSettingsDialog.h"
+#include "BaristaSettingsDialog.h"
 #include "FirmwareSettingsDialog.h"
 #include "PathSettingsDialog.h"
 #include "MPSettingsDialog.h"
@@ -598,6 +599,19 @@ MainWindow::MainWindow(int id, EmuInstance* inst, QWidget* parent) :
 
             actAudioSettings = menu->addAction("Audio settings");
             connect(actAudioSettings, &QAction::triggered, this, &MainWindow::onOpenAudioSettings);
+
+            if (emuInstance->getInstanceID() == 0)
+            {
+                auto* actBarista = menu->addAction(tr("Barista settings"));
+                connect(actBarista, &QAction::triggered, this, [this]
+                {
+                    auto* dialog = findChild<QDialog*>("BaristaSettingsDialog");
+                    if (!dialog) dialog = new BaristaSettingsDialog(emuInstance, this);
+                    dialog->show();
+                    dialog->raise();
+                    dialog->activateWindow();
+                });
+            }
 
             actMPSettings = menu->addAction("Multiplayer settings");
             connect(actMPSettings, &QAction::triggered, this, &MainWindow::onOpenMPSettings);

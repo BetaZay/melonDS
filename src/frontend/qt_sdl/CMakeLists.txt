@@ -8,6 +8,9 @@ set(SOURCES_QT_SDL
     Screen.cpp
     Window.cpp
     EmuInstance.cpp
+    EmuInstanceBarista.cpp
+    barista/Connector.cpp
+    BaristaSettingsDialog.cpp
     EmuInstanceAudio.cpp
     EmuInstanceInput.cpp
     EmuThread.cpp

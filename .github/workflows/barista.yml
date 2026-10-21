@@ -1,0 +1,39 @@
+name: Barista integration
+
+on:
+  push:
+    branches: [master, barista-apphook]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  linux:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+      - name: Install build and smoke-test dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake ninja-build extra-cmake-modules libpcap-dev libsdl2-dev libenet-dev \
+            qt6-base-dev qt6-base-private-dev qt6-multimedia-dev qt6-wayland libqt6svg6-dev \
+            libarchive-dev libzstd-dev libfaad-dev libegl1-mesa-dev libgl1-mesa-dri \
+            xvfb clang llvm
+      - name: Configure
+        run: cmake -S . -B build-barista -G Ninja -DCMAKE_BUILD_TYPE=Release -DENABLE_BARISTA_TESTS=ON -DENABLE_LTO_RELEASE=OFF
+      - name: Build
+        run: cmake --build build-barista --parallel 4
+      - name: Test connector
+        run: ctest --test-dir build-barista --output-on-failure
+      - name: Test emulator and renderers
+        run: |
+          python3 tests/barista/emulator_smoke.py build-barista/melonDS \
+            --qt-driver build-barista/tests/libbarista-qt-driver.so \
+            --artifacts build-barista/smoke-results
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: barista-linux-validation
+          path: |
+            build-barista/melonDS
+            build-barista/smoke-results/
+            build-barista/Testing/Temporary/LastTest.log

@@ -126,6 +126,7 @@ EmuInstance::EmuInstance(int inst) : deleting(false),
     nds = nullptr;
     //updateConsole();
 
+    baristaConfigure();
     audioInit();
     inputInit();
 
@@ -166,6 +167,7 @@ EmuInstance::~EmuInstance()
     net.UnregisterInstance(instanceID);
 
     audioDeInit();
+    barista.Stop();
     inputDeInit();
 
     if (nds)

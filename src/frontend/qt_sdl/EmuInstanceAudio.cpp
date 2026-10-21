@@ -162,6 +162,8 @@ int EmuInstance::audioGetNumSamplesOut(int outlen)
 void EmuInstance::audioCallback(void* data, Uint8* stream, int len)
 {
     EmuInstance* inst = (EmuInstance*)data;
+    // Fill the whole SDL buffer even when speed control requests fewer samples.
+    memset(stream, 0, len);
     len /= (sizeof(s16) * 2);
 
     double skew = std::max(inst->targetFPS / INTERNAL_FRAME_RATE, 0.5);
@@ -195,6 +197,8 @@ void EmuInstance::audioCallback(void* data, Uint8* stream, int len)
         for (int i = num_in; i < len_in; i++)
             ((u32*)stream)[i] = ((u32*)stream)[last];
     }
+
+    inst->barista.SubmitAudio(reinterpret_cast<const int16_t*>(stream), len, inst->audioFreq);
 }
 
 

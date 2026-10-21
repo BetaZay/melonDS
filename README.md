@@ -17,6 +17,12 @@ DS emulator, sorta
 The goal is to do things right and fast, akin to blargSNES (but hopefully better). But also to, you know, have a fun challenge :)
 <hr>
 
+## Barista GamePad integration
+
+This fork adds [Barista AppHook](BARISTA.md): play on a Wii U GamePad with
+video, audio, buttons and touchscreen input. On Linux, start a Barista GamePad
+session and open **Config → Barista settings** to enable the connection.
+
 ## How to use
 
 Firmware boot (not direct boot) requires a BIOS/firmware dump from an original DS or DS Lite.

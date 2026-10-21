@@ -79,6 +79,7 @@ RangeList IntRanges =
     {"Emu.ConsoleType", {0, 1}},
     {"3D.Renderer", {0, renderer3D_Max-1}},
     {"Screen.VSyncInterval", {1, 20}},
+    {"Barista.Screen", {0, 3}},
     {"3D.GL.ScaleFactor", {1, 16}},
     {"Audio.Interpolation", {0, 4}},
     {"Instance*.Audio.Volume", {0, 256}},
@@ -95,6 +96,8 @@ RangeList IntRanges =
 
 DefaultList<bool> DefaultBools =
 {
+    {"Barista.Enabled", false},
+    {"Barista.Input", true},
     {"Screen.Filter", true},
     {"3D.Soft.Threaded", true},
     {"3D.GL.HiresCoordinates", true},
