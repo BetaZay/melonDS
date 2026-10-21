@@ -9,8 +9,10 @@ radio settings or the installed Barista engine.
 
 ## Play
 
-1. Build this fork following [BUILD.md](BUILD.md), or use an artifact from this
-   fork's **Barista integration** workflow.
+1. Download the Linux x86_64 AppImage from this fork's
+   [releases](https://github.com/BetaZay/melonDS/releases), make it executable
+   (`chmod +x melonDS-*.AppImage`) and run it. You can also build this fork
+   following [BUILD.md](BUILD.md).
 2. Start a real GamePad session in Barista as your desktop user.
 3. In melonDS, open **Config → Barista settings**, select **Enable Barista
    connection**, choose a display layout and click **Apply**.
@@ -115,3 +117,17 @@ built only when tests are enabled and is never installed with the emulator.
 
 The automated checks establish emulator/API behavior. Physical GamePad playback
 and DSi-specific games still need hardware/game testing.
+
+## AppImage packaging
+
+The **Barista AppImage** workflow builds on Ubuntu 22.04 for Linux x86_64,
+bundles the Qt/SDL dependencies with the upstream linuxdeploy tools, and tests
+both the native binary and the final AppImage with the homebrew smoke fixture.
+It uploads the AppImage, `SHA256SUMS` and `BUILD-INFO.txt` as a workflow artifact.
+Run it manually with the desired release version, then publish the verified
+files on the fork's GitHub Releases page. Packaging does not publish a release
+automatically.
+
+On systems without FUSE, run with `APPIMAGE_EXTRACT_AND_RUN=1` or extract with
+`./melonDS-*.AppImage --appimage-extract` and run `squashfs-root/AppRun`.
+The emulator still needs a running Barista session for GamePad streaming.

@@ -1,0 +1,95 @@
+name: Barista AppImage
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Version for the AppImage filename
+        required: true
+        default: 1.1-barista.1
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  appimage:
+    runs-on: ubuntu-22.04
+    env:
+      APPIMAGE_VERSION: ${{ inputs.version }}
+      APPIMAGE_EXTRACT_AND_RUN: '1'
+      MELONDS_GIT_BRANCH: ${{ github.ref_name }}
+      MELONDS_GIT_HASH: ${{ github.sha }}
+      MELONDS_BUILD_PROVIDER: GitHub Actions
+      MELONDS_VERSION_SUFFIX: ' Barista'
+    steps:
+      - uses: actions/checkout@v6
+      - name: Validate version
+        run: '[[ "$APPIMAGE_VERSION" =~ ^[0-9][0-9A-Za-z.-]*$ ]]'
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake ninja-build extra-cmake-modules libpcap-dev libsdl2-dev libenet-dev \
+            qt6-base-dev qt6-base-private-dev qt6-multimedia-dev qt6-wayland libqt6svg6-dev \
+            libarchive-dev libzstd-dev libfaad-dev libegl1-mesa-dev libgl1-mesa-dri \
+            xvfb clang llvm libfuse2
+      - name: Configure and build
+        run: |
+          cmake -S . -B build-appimage -G Ninja -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_INSTALL_PREFIX=/usr -DMELONDS_EMBED_BUILD_INFO=ON \
+            -DENABLE_BARISTA_TESTS=ON -DENABLE_LTO_RELEASE=OFF
+          cmake --build build-appimage --parallel 4
+      - name: Test connector and emulator
+        run: |
+          ctest --test-dir build-appimage --output-on-failure
+          python3 tests/barista/emulator_smoke.py build-appimage/melonDS \
+            --qt-driver build-appimage/tests/libbarista-qt-driver.so \
+            --artifacts build-appimage/smoke-native
+      - name: Stage application
+        run: |
+          DESTDIR="$PWD/AppDir" cmake --install build-appimage
+          install -Dm644 LICENSE AppDir/usr/share/licenses/melonDS/LICENSE
+          install -Dm644 BARISTA.md AppDir/usr/share/doc/melonDS/BARISTA.md
+      - name: Download upstream packaging tools
+        run: |
+          curl -fL --retry 3 -o linuxdeploy-x86_64.AppImage \
+            https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
+          curl -fL --retry 3 -o linuxdeploy-plugin-qt-x86_64.AppImage \
+            https://github.com/linuxdeploy/linuxdeploy-plugin-qt/releases/download/continuous/linuxdeploy-plugin-qt-x86_64.AppImage
+          chmod +x linuxdeploy-x86_64.AppImage linuxdeploy-plugin-qt-x86_64.AppImage
+      - name: Package AppImage
+        env:
+          EXTRA_PLATFORM_PLUGINS: libqwayland-egl.so;libqwayland-generic.so
+          EXTRA_QT_PLUGINS: waylandcompositor
+          QMAKE: /usr/lib/qt6/bin/qmake
+        run: |
+          mkdir -p dist
+          export LDAI_OUTPUT="$PWD/dist/melonDS-${APPIMAGE_VERSION}-x86_64.AppImage"
+          export LDAI_VERSION="$APPIMAGE_VERSION"
+          ./linuxdeploy-x86_64.AppImage --appdir AppDir --plugin qt --output appimage
+          chmod +x "$LDAI_OUTPUT"
+      - name: Test packaged AppImage
+        run: |
+          python3 tests/barista/emulator_smoke.py "dist/melonDS-${APPIMAGE_VERSION}-x86_64.AppImage" \
+            --qt-driver build-appimage/tests/libbarista-qt-driver.so \
+            --artifacts build-appimage/smoke-appimage
+      - name: Record checksum and build provenance
+        run: |
+          cd dist
+          sha256sum *.AppImage > SHA256SUMS
+          printf 'commit=%s\nversion=%s\nplatform=linux-x86_64\nbuild_os=ubuntu-22.04\n' \
+            "$MELONDS_GIT_HASH" "$APPIMAGE_VERSION" > BUILD-INFO.txt
+          sha256sum ../linuxdeploy-x86_64.AppImage ../linuxdeploy-plugin-qt-x86_64.AppImage >> BUILD-INFO.txt
+      - uses: actions/upload-artifact@v7
+        with:
+          name: melonDS-Barista-AppImage-x86_64
+          path: dist/
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: barista-appimage-validation
+          path: |
+            build-appimage/smoke-native/
+            build-appimage/smoke-appimage/
+            build-appimage/Testing/Temporary/LastTest.log
